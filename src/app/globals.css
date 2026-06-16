@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body { overflow-x: hidden; }
+body { background: #F7F3EA; color: #0B1F3A; font-family: system-ui, -apple-system, sans-serif; }
+
+.kard { transition: transform .12s ease, box-shadow .12s ease; }
+.kard:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(11,31,58,.14); border-color: #0B1F3A !important; }
+.add-order:hover { background: #0B1F3A !important; color: #F7F3EA !important; }
+
+.kanban-scroll { scrollbar-width: thin; }
+.kanban-scroll::-webkit-scrollbar { height: 10px; }
+.kanban-scroll::-webkit-scrollbar-thumb { background: #D8CFBA; border-radius: 8px; }
+.kanban-scroll::-webkit-scrollbar-track { background: transparent; }
+
+@media print { .no-print { display: none !important; } }
