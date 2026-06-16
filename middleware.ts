@@ -1,43 +1,35 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-
-  const { data: { user } } = await supabase.auth.getUser();
+/**
+ * Middleware ringan & Edge-safe: TIDAK memakai @supabase/ssr (yang menarik
+ * modul Node seperti __dirname dan gagal di Edge Runtime). Di sini cukup
+ * mengecek keberadaan cookie sesi Supabase sebagai "penjaga pintu" pertama.
+ * Validasi sesi sebenarnya tetap dilakukan di server (getSessionProfile).
+ */
+export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
+  // rute publik (tidak perlu login)
   const isPublic =
     path.startsWith("/login") ||
     path.startsWith("/inv/") ||
     path === "/";
 
-  if (!user && !isPublic) {
+  if (isPublic) return NextResponse.next();
+
+  // Supabase menyimpan token sesi di cookie berpola "sb-<ref>-auth-token".
+  // Cek keberadaannya tanpa memanggil library apa pun.
+  const hasSession = request.cookies
+    .getAll()
+    .some((c) => c.name.startsWith("sb-") && c.name.includes("auth-token"));
+
+  if (!hasSession) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {
